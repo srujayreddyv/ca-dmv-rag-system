@@ -6,7 +6,7 @@ You can run the app locally (see README) or deploy the **API** to a cloud host. 
 
 ## Deploy the API to Render
 
-Render runs the API as a **web service** from your Git repo. The build step creates the handbook index; the start step runs the FastAPI app.
+Render runs the API as a **web service** from your Git repo. The **Blueprint** uses the **Dockerfile**: the image builds chunks and the FAISS index at build time, then runs the API. If you create a **Web Service** manually (no Blueprint), you can use either the Docker runtime or the Python runtime with the build/start commands in §2.
 
 ### 1. Prerequisites
 

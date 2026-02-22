@@ -13,6 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Build chunks and FAISS index at image build time (so Render/deploy has the index).
+RUN python scripts/build_chunks.py && python scripts/build_index.py
+
 # Default: run API. Override in docker-compose for streamlit.
+# Use PORT from env so Render can inject it (e.g. 10000).
 EXPOSE 8000
-CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
