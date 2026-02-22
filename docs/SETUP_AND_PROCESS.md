@@ -27,7 +27,7 @@ This document outlines how to set up the development environment and the end-to-
 
 3. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements.lock
    ```
 
 4. **Environment variables** (for the LLM and optionally Streamlit)
@@ -182,6 +182,7 @@ The system follows a standard Retrieval Augmented Generation pipeline over the C
   - **GET /** — info and links to docs/endpoints.
   - **GET /docs** — Swagger UI. **GET /redoc** — ReDoc. **GET /openapi.json** — OpenAPI schema.
   - **GET /health** — 200 if index or chunks exist.
+  - **GET /metrics** — basic counters/latency/estimated token usage.
   - **POST /ask** — body `{"question": "..."}` → `{"answer": "..."}`. Streamlit uses this.
   - **POST /retrieve** — body `{"question": "...", "top_k": 5}` → `{"chunks": [{text, page, score}]}` (no LLM).
   - The API uses the persisted index (`data/embeddings/handbook.index`) when present; otherwise it builds an in-memory index from `chunks.jsonl` on first `/ask` or `/retrieve`.
@@ -214,4 +215,3 @@ The system follows a standard Retrieval Augmented Generation pipeline over the C
 
 - [California DMV Driver Handbook](https://www.dmv.ca.gov/portal/handbook/california-driver-handbook/) (source for `ca-drivers-handbook.pdf`)
 - RAG: [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)
-

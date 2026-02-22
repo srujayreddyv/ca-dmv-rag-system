@@ -21,6 +21,19 @@ class FakeRetriever:
         ]
 
 
+def _collect_sse_data_lines(resp) -> list[dict]:
+    events = []
+    for line in resp.iter_lines():
+        if not line:
+            continue
+        text = line.decode() if isinstance(line, bytes) else line
+        if not text.startswith("data: "):
+            continue
+        import json
+        events.append(json.loads(text[6:]))
+    return events
+
+
 @patch("src.api.main.CHUNKS_JSONL")
 @patch("src.api.main.INDEX_PATH")
 def test_root_returns_links(mock_index_path, mock_chunks_jsonl):
@@ -65,6 +78,9 @@ def test_health_503_when_neither_exist(mock_index_path, mock_chunks_jsonl):
     r = client.get("/health")
     assert r.status_code == 503
     assert "detail" in r.json()
+    assert r.json().get("code")
+    assert r.json().get("request_id")
+    assert r.headers.get("x-request-id")
 
 
 @patch("src.api.main._build_retriever")
@@ -99,8 +115,10 @@ def test_retrieve_503_when_build_fails(mock_build):
 def test_retrieve_validates_top_k():
     r = client.post("/retrieve", json={"question": "x", "top_k": 0})
     assert r.status_code == 422
+    assert r.json().get("request_id")
     r = client.post("/retrieve", json={"question": "x", "top_k": 21})
     assert r.status_code == 422
+    assert r.json().get("request_id")
 
 
 @patch("src.api.main.answer")
@@ -207,3 +225,52 @@ def test_retrieve_source_filter(mock_build):
     assert r.status_code == 200
     assert len(r.json()["chunks"]) == 1
     assert r.json()["chunks"][0]["text"] == "chunk1"
+
+
+@patch("src.api.main.answer_stream")
+@patch("src.api.main._build_retriever")
+def test_ask_stream_ok(mock_build, mock_answer_stream):
+    mock_build.return_value = FakeRetriever()
+    mock_answer_stream.return_value = iter(["A ", "test ", "answer."])
+
+    with client.stream("POST", "/ask/stream", json={"question": "x"}) as r:
+        assert r.status_code == 200
+        events = _collect_sse_data_lines(r)
+
+    assert any("token" in e for e in events)
+    done = [e for e in events if e.get("done")]
+    assert len(done) == 1
+    assert done[0]["answer"] == "A test answer."
+    assert done[0]["confidence"] == "high"
+    assert isinstance(done[0]["sources"], list)
+
+
+@patch("src.api.main.answer_stream")
+@patch("src.api.main._build_retriever")
+def test_ask_stream_low_confidence_skips_llm(mock_build, mock_answer_stream):
+    mock_build.return_value = LowScoreRetriever()
+
+    with client.stream("POST", "/ask/stream", json={"question": "x"}) as r:
+        assert r.status_code == 200
+        events = _collect_sse_data_lines(r)
+
+    done = [e for e in events if e.get("done")]
+    assert len(done) == 1
+    assert done[0]["confidence"] == "low"
+    assert "don't have enough" in done[0]["answer"].lower() or "not enough" in done[0]["answer"].lower()
+    mock_answer_stream.assert_not_called()
+
+
+@patch("src.api.main.answer_stream")
+@patch("src.api.main._build_retriever")
+def test_ask_stream_returns_error_event(mock_build, mock_answer_stream):
+    mock_build.return_value = FakeRetriever()
+    mock_answer_stream.side_effect = ValueError("LLM not configured")
+
+    with client.stream("POST", "/ask/stream", json={"question": "x"}) as r:
+        assert r.status_code == 200
+        events = _collect_sse_data_lines(r)
+
+    assert any("error" in e for e in events)
+    err = [e for e in events if "error" in e][0]
+    assert "LLM not configured" in err["error"]

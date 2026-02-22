@@ -45,6 +45,18 @@ MAX_QUESTION_LENGTH = int(os.getenv("MAX_QUESTION_LENGTH", "1000"))
 # Rate limiting for /ask (per-IP). Set to 0 to disable.
 RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "0"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+# Rate-limit backend:
+# - memory: per-process (simple dev mode)
+# - sqlite: process-shared on the same host (recommended default)
+RATE_LIMIT_BACKEND = os.getenv("RATE_LIMIT_BACKEND", "sqlite").strip().lower()
+RATE_LIMIT_DB_PATH = Path(os.getenv("RATE_LIMIT_DB_PATH", str(PROJECT_ROOT / "data" / "rate_limit.db")))
+
+# API CORS configuration.
+# Examples:
+#   CORS_ALLOW_ORIGINS=*  (dev default)
+#   CORS_ALLOW_ORIGINS=https://app.example.com,https://admin.example.com
+CORS_ALLOW_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "*")
+CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "false").lower() in ("1", "true", "yes")
 
 # Generation (OpenAI or OpenAI-compatible: Ollama, Groq, OpenRouter)
 # Override with LLM_MODEL in .env; use OPENAI_BASE_URL for non-OpenAI. See .env.example.

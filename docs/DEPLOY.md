@@ -22,7 +22,7 @@ Render runs the API as a **web service** from your Git repo. The **Blueprint** u
 4. **If you create a Web Service manually** (no Blueprint):
    - **Runtime:** Python 3.11.
    - **Build command:**  
-     `pip install -r requirements.txt && python scripts/build_chunks.py && python scripts/build_index.py`
+     `pip install -r requirements.lock && python scripts/build_chunks.py && python scripts/build_index.py`
    - **Start command:**  
      `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
 
@@ -85,7 +85,7 @@ Point the app at the deployed API:
 
 The app is a standard FastAPI app (Python 3.10+; 3.11 recommended):
 
-- **Build:** Install deps and build the index (e.g. `pip install -r requirements.txt && python scripts/build_chunks.py && python scripts/build_index.py`).
+- **Build:** Install deps and build the index (e.g. `pip install -r requirements.lock && python scripts/build_chunks.py && python scripts/build_index.py`).
 - **Run:** `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT` (use the host’s `PORT` env var).
 - **Env:** Same as above (OPENAI_API_KEY, LLM_MODEL, optional OPENAI_BASE_URL, RATE_LIMIT_*).
 

@@ -108,10 +108,12 @@ def _ask_api_stream(
                     if "token" in payload:
                         answer_parts.append(payload["token"])
                     if payload.get("done"):
-                        answer_parts.append(payload.get("answer", ""))
                         sources = payload.get("sources", [])
                         confidence = payload.get("confidence", "high")
-                        break
+                        final_answer = payload.get("answer", "")
+                        if final_answer:
+                            return (final_answer, sources, confidence)
+                        return ("".join(answer_parts), sources, confidence)
             return ("".join(answer_parts), sources, confidence)
     except urllib.error.HTTPError as e:
         body = e.read().decode() if e.fp else ""

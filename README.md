@@ -37,7 +37,7 @@ cd ca-dmv-rag-system
 
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.lock
 
 cp .env.example .env
 # Edit .env: choose OpenAI, or Ollama / Groq / OpenRouter (see .env.example)
@@ -147,6 +147,7 @@ pytest tests/ -m "not slow"   # skip slow tests (embedding model)
 | GET | `/redoc` | ReDoc |
 | GET | `/openapi.json` | OpenAPI schema |
 | GET | `/health` | Readiness |
+| GET | `/metrics` | Basic API metrics (requests, errors, latency, estimated token usage) |
 | POST | `/ask` | RAG: `{"question":"..."}` → `{"answer","sources","confidence"}` |
 | POST | `/ask/stream` | Same input; Server-Sent Events (tokens then `done` with answer/sources) |
 | POST | `/retrieve` | Chunks only: `{"question":"...", "top_k":5}` → `{"chunks":[...]}` |
