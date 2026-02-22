@@ -45,3 +45,7 @@ def main() -> None:
     store.save(INDEX_PATH)
     meta = INDEX_PATH.parent / (INDEX_PATH.stem + ".meta.json")
     print(f"Saved to {INDEX_PATH} and {meta}")
+
+
+if __name__ == "__main__":
+    main()
