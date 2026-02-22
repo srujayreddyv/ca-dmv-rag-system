@@ -17,16 +17,16 @@ Render runs the API as a **web service** from your Git repo. The build step crea
 ### 2. One-time setup on Render
 
 1. Go to [dashboard.render.com](https://dashboard.render.com) and sign in.
-2. **New** → **Blueprint** (or **Web Service** if you prefer to configure by hand).
-3. Connect your Git repo and choose this project.
-4. If you use the **Blueprint** (`render.yaml` in the repo):
-   - Render will create a service named `ca-dmv-rag-api` with the build/start commands from `render.yaml`.
-5. If you create a **Web Service** manually:
+2. **New** → **Web Service** (recommended if you want to avoid the Blueprint flow; see below for **Blueprint**).
+3. Connect your Git repo and choose this project (branch: e.g. `main`).
+4. **If you create a Web Service manually** (no Blueprint):
    - **Runtime:** Python 3.11.
    - **Build command:**  
      `pip install -r requirements.txt && python scripts/build_chunks.py && python scripts/build_index.py`
    - **Start command:**  
      `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
+
+5. **If you prefer Blueprint:** **New** → **Blueprint**, connect the repo, and Render will read `render.yaml`. (Render may ask for payment verification even for free tier; adding a card does not charge you for free services.)
 
 ### 3. Environment variables (required for the LLM)
 
@@ -62,12 +62,22 @@ After deploy, the API will be at `https://<your-service>.onrender.com`. Use:
 - `POST /ask/stream` — streaming answer  
 - `GET /docs` — Swagger UI  
 
-### 6. Using the Streamlit app with the deployed API
+### 6. Render free tier
+
+On the **free** plan:
+
+- **Spin-down:** The service sleeps after ~15 minutes of no traffic. The **first request after that** wakes it and runs a **full build** (install deps + build chunks + build index) then starts the app. That can take **several minutes** (e.g. 5–15), so the first request may time out or feel very slow. Subsequent requests are fast until it sleeps again.
+- **Memory:** Free tier has 512 MB RAM. Loading sentence-transformers and the FAISS index can be tight; if the service crashes or fails to start, you may need a paid plan or a smaller embedding model.
+- **Build minutes:** Free accounts get limited build minutes per month. Heavy `pip install` plus index build uses that; keep an eye in the Render dashboard.
+
+**Tips:** Commit `data/ca-drivers-handbook.pdf` so the build can create the index. For a demo, the free setup is fine if you’re okay with slow cold starts. To keep it warm, you can use an external cron (e.g. [cron-job.org](https://cron-job.org)) to hit `GET /health` every 10–14 minutes (stay within Render’s free-tier limits).
+
+### 7. Using the Streamlit app with the deployed API
 
 Point the app at the deployed API:
 
 - **Local Streamlit:** Set `API_URL=https://<your-service>.onrender.com` in your `.env`, then run `streamlit run streamlit_app.py`.
-- **Streamlit Cloud:** In the app’s secrets, set `API_URL` to `https://<your-service>.onrender.com`.
+- **Streamlit Cloud:** In the app’s secrets, set `API_URL` to `https://<your-service>.onrender.com`. If the API is on Render free tier and has spun down, the first Streamlit request may take a long time while the API cold-starts.
 
 ---
 
