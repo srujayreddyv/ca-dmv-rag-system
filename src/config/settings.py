@@ -38,6 +38,11 @@ USE_RERANKER = os.getenv("USE_RERANKER", "").lower() in ("1", "true", "yes")
 RERANK_RETRIEVE_K = int(os.getenv("RERANK_RETRIEVE_K", "15"))
 # If best retrieval score is below this, return "I don't have enough information" (no LLM call)
 SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.3"))
+# Startup/runtime memory controls for hosted environments:
+# - PRELOAD_RETRIEVER_ON_STARTUP: eagerly load retriever at startup (can increase memory on boot)
+# - ALLOW_IN_MEMORY_INDEX_FALLBACK: build a temporary in-memory index from chunks when FAISS index is missing
+PRELOAD_RETRIEVER_ON_STARTUP = os.getenv("PRELOAD_RETRIEVER_ON_STARTUP", "false").lower() in ("1", "true", "yes")
+ALLOW_IN_MEMORY_INDEX_FALLBACK = os.getenv("ALLOW_IN_MEMORY_INDEX_FALLBACK", "false").lower() in ("1", "true", "yes")
 
 # API: max length for question (characters); requests exceeding this return 400
 MAX_QUESTION_LENGTH = int(os.getenv("MAX_QUESTION_LENGTH", "1000"))

@@ -37,11 +37,13 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from src.config.settings import (
+    ALLOW_IN_MEMORY_INDEX_FALLBACK,
     CHUNKS_JSONL,
     CORS_ALLOW_CREDENTIALS,
     CORS_ALLOW_ORIGINS,
     INDEX_PATH,
     MAX_QUESTION_LENGTH,
+    PRELOAD_RETRIEVER_ON_STARTUP,
     RATE_LIMIT_BACKEND,
     RATE_LIMIT_DB_PATH,
     RATE_LIMIT_REQUESTS,
@@ -170,6 +172,10 @@ def _build_retriever():
     if INDEX_PATH.exists():
         _retriever = Retriever(INDEX_PATH)
         return _retriever
+    if not ALLOW_IN_MEMORY_INDEX_FALLBACK:
+        raise FileNotFoundError(
+            f"Index not found: {INDEX_PATH}. Run: python scripts/build_index.py"
+        )
     if not CHUNKS_JSONL.exists():
         raise FileNotFoundError(
             f"Need {CHUNKS_JSONL} or {INDEX_PATH}. Run: python scripts/build_chunks.py [build_index.py]"
@@ -200,15 +206,33 @@ def startup_preflight() -> None:
     index_exists = INDEX_PATH.exists()
     chunks_exists = CHUNKS_JSONL.exists()
     llm_ok = _llm_env_configured()
+    logger.info("startup preflight: rate_limit_backend=%s", RATE_LIMIT_BACKEND)
+    logger.info(
+        "startup preflight: preload_retriever=%s in_memory_index_fallback=%s",
+        PRELOAD_RETRIEVER_ON_STARTUP,
+        ALLOW_IN_MEMORY_INDEX_FALLBACK,
+    )
+    if RATE_LIMIT_BACKEND == "sqlite":
+        try:
+            _init_rate_limit_db()
+            logger.info("startup preflight: rate-limit sqlite db ready at %s", RATE_LIMIT_DB_PATH)
+        except Exception as e:
+            logger.warning("startup preflight: failed to init rate-limit db: %s", e)
 
     if index_exists:
         logger.info("startup preflight: index found at %s", INDEX_PATH)
     elif chunks_exists:
-        logger.warning(
-            "startup preflight: index missing (%s); API will build an in-memory index from %s on first request.",
-            INDEX_PATH,
-            CHUNKS_JSONL,
-        )
+        if ALLOW_IN_MEMORY_INDEX_FALLBACK:
+            logger.warning(
+                "startup preflight: index missing (%s); API may build in-memory index from %s on request.",
+                INDEX_PATH,
+                CHUNKS_JSONL,
+            )
+        else:
+            logger.warning(
+                "startup preflight: index missing (%s); fallback disabled. Run build_index before serving traffic.",
+                INDEX_PATH,
+            )
     else:
         logger.warning(
             "startup preflight: missing both %s and %s. Run build scripts before handling traffic.",
@@ -221,7 +245,7 @@ def startup_preflight() -> None:
     else:
         logger.warning("startup preflight: LLM env not configured (OPENAI_API_KEY or OPENAI_BASE_URL)")
 
-    if index_exists or chunks_exists:
+    if PRELOAD_RETRIEVER_ON_STARTUP and (index_exists or chunks_exists):
         try:
             _build_retriever()
             logger.info("startup preflight: retriever initialized")
@@ -578,10 +602,3 @@ def retrieve(req: RetrieveRequest):
         raw = [c for c in raw if c.get("source") == req.source_filter]
     chunks = [ChunkOut(text=c.get("text", ""), page=c.get("page"), score=c.get("score", 0.0)) for c in raw]
     return RetrieveResponse(chunks=chunks)
-    logger.info("startup preflight: rate_limit_backend=%s", RATE_LIMIT_BACKEND)
-    if RATE_LIMIT_BACKEND == "sqlite":
-        try:
-            _init_rate_limit_db()
-            logger.info("startup preflight: rate-limit sqlite db ready at %s", RATE_LIMIT_DB_PATH)
-        except Exception as e:
-            logger.warning("startup preflight: failed to init rate-limit db: %s", e)
