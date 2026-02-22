@@ -9,6 +9,7 @@ Set API_URL in .env to override http://localhost:8000
 
 import json
 import os
+import socket
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -21,6 +22,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
 import streamlit as st
 
 API_URL = os.getenv("API_URL", "http://localhost:8000").rstrip("/")
+API_TIMEOUT_SECONDS = int(os.getenv("API_TIMEOUT_SECONDS", "180"))
 
 
 def ask_api(
@@ -44,7 +46,7 @@ def ask_api(
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with urllib.request.urlopen(req, timeout=API_TIMEOUT_SECONDS) as r:
             out = json.load(r)
             return (
                 out.get("answer", ""),
@@ -72,6 +74,10 @@ def ask_api(
         raise RuntimeError(
             f"Cannot reach API at {API_URL}. Is it running? (e.g. uvicorn src.api.main:app --reload)"
         ) from e
+    except TimeoutError as e:
+        raise RuntimeError(f"API timeout after {API_TIMEOUT_SECONDS}s while calling /ask.") from e
+    except socket.timeout as e:
+        raise RuntimeError(f"API timeout after {API_TIMEOUT_SECONDS}s while calling /ask.") from e
 
 
 def _ask_api_stream(
@@ -92,7 +98,7 @@ def _ask_api_stream(
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=120) as r:
+        with urllib.request.urlopen(req, timeout=API_TIMEOUT_SECONDS) as r:
             answer_parts = []
             sources = []
             confidence = "high"
@@ -128,6 +134,10 @@ def _ask_api_stream(
         raise RuntimeError(
             f"Cannot reach API at {API_URL}. Is it running?"
         ) from e
+    except TimeoutError as e:
+        raise RuntimeError(f"API timeout after {API_TIMEOUT_SECONDS}s while calling /ask/stream.") from e
+    except socket.timeout as e:
+        raise RuntimeError(f"API timeout after {API_TIMEOUT_SECONDS}s while calling /ask/stream.") from e
 
 
 def _stream_generator(
@@ -148,23 +158,29 @@ def _stream_generator(
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=120) as r:
-        for line in r:
-            line = line.decode("utf-8").strip()
-            if line.startswith("data: "):
-                try:
-                    payload = json.loads(line[6:])
-                except json.JSONDecodeError:
-                    continue
-                if "error" in payload:
-                    raise RuntimeError(payload["error"])
-                if "token" in payload:
-                    yield payload["token"]
-                if payload.get("done"):
-                    result_holder["answer"] = payload.get("answer", "")
-                    result_holder["sources"] = payload.get("sources", [])
-                    result_holder["confidence"] = payload.get("confidence", "high")
-                    return
+    try:
+        with urllib.request.urlopen(req, timeout=API_TIMEOUT_SECONDS) as r:
+            for line in r:
+                line = line.decode("utf-8").strip()
+                if line.startswith("data: "):
+                    try:
+                        payload = json.loads(line[6:])
+                    except json.JSONDecodeError:
+                        continue
+                    if "error" in payload:
+                        raise RuntimeError(payload["error"])
+                    if "token" in payload:
+                        yield payload["token"]
+                    if payload.get("done"):
+                        result_holder["answer"] = payload.get("answer", "")
+                        result_holder["sources"] = payload.get("sources", [])
+                        result_holder["confidence"] = payload.get("confidence", "high")
+                        return
+    except (TimeoutError, socket.timeout):
+        raise RuntimeError(
+            f"API stream timed out after {API_TIMEOUT_SECONDS}s. "
+            "Try again or disable streaming in the sidebar."
+        )
 
 
 def main():
@@ -236,8 +252,13 @@ def main():
                         if result_holder.get("answer"):
                             answer_text = result_holder["answer"]
                     except RuntimeError as e:
-                        st.error(str(e))
-                        raise
+                        st.warning(f"{e} Falling back to non-stream mode for this request.")
+                        with st.spinner("Retrying without streaming..."):
+                            answer_text, sources, confidence = ask_api(
+                                question.strip(), stream=False,
+                                include_sources=include_sources,
+                                source_filter=source_filter,
+                            )
                     st.markdown("---")
                     if sources:
                         st.markdown("#### Sources (from handbook vector DB)")
