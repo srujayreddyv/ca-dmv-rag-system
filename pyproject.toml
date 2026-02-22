@@ -1,0 +1,10 @@
+[project]
+name = "ca-dmv-rag-system"
+version = "0.1.0"
+description = "RAG over the California DMV Driver Handbook"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+# Keep pytest.ini as source of truth; this only sets testpaths if not in pytest.ini
+testpaths = ["tests"]

@@ -1,0 +1,21 @@
+# Render Blueprint: CA DMV RAG API
+# Deploy from GitHub/GitLab/Bitbucket. Set env vars in Dashboard (OPENAI_API_KEY, etc.).
+# See docs/DEPLOY.md for full steps.
+
+services:
+  - type: web
+    name: ca-dmv-rag-api
+    runtime: python
+    region: oregon
+
+    buildCommand: pip install -r requirements.txt && python scripts/build_chunks.py && python scripts/build_index.py
+    startCommand: uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      # Add OPENAI_API_KEY, OPENAI_BASE_URL, LLM_MODEL (and optional SCORE_THRESHOLD, RATE_LIMIT_*) in Dashboard
+
+    # Optional: enable rate limiting when public (e.g. 60 requests per 60s per IP)
+    # RATE_LIMIT_REQUESTS=60
+    # RATE_LIMIT_WINDOW_SECONDS=60

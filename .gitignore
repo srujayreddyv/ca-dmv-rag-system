@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Environment and secrets
+.env
+.env.local
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pytest
+.pytest_cache/
+
+# Built artifacts (regenerate with scripts/build_index.py)
+data/embeddings/
+
+# Eval run outputs (optional: remove this line to commit results)
+data/eval/results/

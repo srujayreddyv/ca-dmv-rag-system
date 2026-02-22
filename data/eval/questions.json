@@ -1,0 +1,17 @@
+[
+  {"id": "1", "question": "What is the blood alcohol limit for DUI?", "answer": "0.08% or higher if over 21; 0.01% if under 21 or on DUI probation; 0.04% for commercial drivers."},
+  {"id": "2", "question": "When must I use headlights?", "answer": "When too dark to see from 1,000 feet; 30 minutes after sunset until 30 minutes before sunrise; in adverse weather; on mountain roads and tunnels."},
+  {"id": "3", "question": "What is the speed limit on most California highways?", "answer": "65 mph unless otherwise posted."},
+  {"id": "4", "question": "How do I renew my driver license?", "answer": "Visit dmv.ca.gov/dlservices or a DMV office. You may need to provide proof of identity."},
+  {"id": "5", "question": "Within how many feet must I dim my high beams for oncoming traffic?", "answer": "Within 500 feet of a vehicle coming toward you."},
+  {"id": "6", "question": "How soon must I notify DMV when I change my address?", "answer": "Within 10 days. Submit at dmv.ca.gov/addresschange or by mail."},
+  {"id": "7", "question": "How old must you be to get an instruction permit in California?", "answer": "At least 15 and a half years old if you are under 18."},
+  {"id": "8", "question": "What are the provisional license restrictions for minors?", "answer": "Cannot drive between 11 p.m. and 5 a.m. during the first 12 months; cannot have passengers under 20 unless a parent, guardian, or licensed driver 25 or older is in the car."},
+  {"id": "9", "question": "How far in advance should you signal before turning?", "answer": "At least 100 feet before you turn."},
+  {"id": "10", "question": "When may you drive in a bicycle lane?", "answer": "When parking (where permitted), entering or leaving the road, or turning within 200 feet of an intersection."},
+  {"id": "11", "question": "How long may you drive in a center left turn lane?", "answer": "No more than 200 feet."},
+  {"id": "12", "question": "When must you use a turnout to let vehicles pass?", "answer": "When you are driving slowly on a two-lane road where passing is unsafe and there are five or more vehicles following you."},
+  {"id": "13", "question": "May you pass over double solid yellow lines?", "answer": "No, except when turning left across a single set to enter or exit a driveway, or in an HOV lane with a designated left entrance, or when instructed by construction signs."},
+  {"id": "14", "question": "How many practice hours must a minor complete before the behind-the-wheel test?", "answer": "At least 50 hours with a California-licensed driver 25 or older, including 10 hours at night."},
+  {"id": "15", "question": "When does a California driver license need to be REAL ID compliant for domestic flights?", "answer": "Beginning May 2025."}
+]

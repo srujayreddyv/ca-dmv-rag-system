@@ -1,0 +1,68 @@
+# CI: run tests and optional full eval on push/PR.
+# For eval job to succeed: add OPENAI_API_KEY (and optional OPENAI_BASE_URL, LLM_MODEL) in repo Secrets;
+# ensure data/ca-drivers-handbook.pdf and data/eval/questions.json are in the repo.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests (no slow)
+        run: pytest tests/ -m "not slow" -v --tb=short
+
+  eval:
+    runs-on: ubuntu-latest
+    # Skip if no LLM secret (e.g. in forks); eval needs API key to call the model.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build chunks and index
+        run: |
+          python scripts/build_chunks.py
+          python scripts/build_index.py
+        continue-on-error: true  # PDF or eval data may be missing
+
+      - name: Run evaluation
+        run: python scripts/run_eval.py --no-save
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+        continue-on-error: true  # Do not fail CI if secret missing or eval fails
