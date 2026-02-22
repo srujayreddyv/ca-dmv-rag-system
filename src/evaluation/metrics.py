@@ -129,6 +129,9 @@ def rouge_l_f1(pred: str, ref: str) -> float:
         return 1.0
     if not ref or not pred:
         return 0.0
+    # Make containment behavior stable across rouge-score versions/tokenizers.
+    if _normalize(ref) in _normalize(pred):
+        return 1.0
     try:
         from rouge_score import rouge_scorer
         scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=False)
@@ -136,8 +139,6 @@ def rouge_l_f1(pred: str, ref: str) -> float:
         return scores["rougeL"].fmeasure
     except Exception:
         # Fallback: ROUGE-L F1 via token-level LCS.
-        if _normalize(ref) in _normalize(pred):
-            return 1.0
         ref_tok = _simple_tokenize(ref)
         pred_tok = _simple_tokenize(pred)
         lcs = _lcs_len(ref_tok, pred_tok)
