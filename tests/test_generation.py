@@ -21,7 +21,9 @@ class TestBuildQaPrompt:
         assert "California DMV" in out or "DMV" in out
         assert "I don't know" in out
         assert "Q?" in out
-        assert "(Page" not in out
+        # Prompt instructions may mention page-citation format; ensure page-less chunks do not
+        # get context-injected page labels.
+        assert "The limit is 65 mph.\n(Page " not in out
 
     def test_chunk_with_page(self):
         out = build_qa_prompt("Q?", [{"text": "Foo.", "page": 42}])
