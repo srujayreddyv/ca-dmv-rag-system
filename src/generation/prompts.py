@@ -28,6 +28,13 @@ def build_qa_prompt(question: str, context_chunks: list[dict[str, Any]]) -> str:
     context = "\n\n---\n\n".join(parts)
     return f"""You are a helpful assistant. Answer the question using only the following context from the California DMV Driver Handbook. If the context does not contain the answer, say "I don't know."
 
+Rules:
+- Do not use outside knowledge.
+- Prefer exact handbook facts (numbers, limits, conditions).
+- If the answer is uncertain or incomplete from context, say "I don't know based on the provided handbook context."
+- Keep the answer concise (2-5 sentences).
+- When possible, cite page numbers from context in parentheses, e.g. (Page 42).
+
 Context:
 
 {context}

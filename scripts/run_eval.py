@@ -29,13 +29,15 @@ from openai import AuthenticationError, NotFoundError, RateLimitError
 
 from src.config.settings import (
     CHUNKS_JSONL,
+    HYBRID_RERANK_ALPHA,
     INDEX_PATH,
     PROJECT_ROOT,
     RERANK_RETRIEVE_K,
     TOP_K,
+    USE_HYBRID_RERANK,
     USE_RERANKER,
 )
-from src.retrieval.reranker import rerank
+from src.retrieval.reranker import hybrid_rerank, rerank
 from src.evaluation import exact_match, embedding_similarity, bleu, llm_judge, ref_in_pred, rouge_l_f1
 from src.generation import answer
 from src.retrieval import Retriever, embed_query, embed_texts
@@ -94,6 +96,8 @@ def main() -> None:
         chunks = retriever.retrieve(q, top_k=retrieve_k)
         if USE_RERANKER and len(chunks) > TOP_K:
             chunks = rerank(q, chunks, top_k=TOP_K)
+        elif USE_HYBRID_RERANK:
+            chunks = hybrid_rerank(q, chunks, top_k=TOP_K, alpha=HYBRID_RERANK_ALPHA)
         try:
             pred = answer(q, context_chunks=chunks)
         except (ValueError, AuthenticationError, NotFoundError, RateLimitError) as e:

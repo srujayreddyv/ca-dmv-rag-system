@@ -36,6 +36,9 @@ TOP_K = 5
 # Reranker: retrieve more then rerank with cross-encoder. Set USE_RERANKER=1 to enable.
 USE_RERANKER = os.getenv("USE_RERANKER", "").lower() in ("1", "true", "yes")
 RERANK_RETRIEVE_K = int(os.getenv("RERANK_RETRIEVE_K", "15"))
+# Lightweight hybrid rerank (semantic + lexical), recommended for better quality on low-memory hosts.
+USE_HYBRID_RERANK = os.getenv("USE_HYBRID_RERANK", "true").lower() in ("1", "true", "yes")
+HYBRID_RERANK_ALPHA = float(os.getenv("HYBRID_RERANK_ALPHA", "0.75"))
 # If best retrieval score is below this, return "I don't have enough information" (no LLM call)
 SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.3"))
 # Startup/runtime memory controls for hosted environments:

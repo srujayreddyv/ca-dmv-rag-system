@@ -42,6 +42,7 @@ from src.config.settings import (
     CORS_ALLOW_CREDENTIALS,
     CORS_ALLOW_ORIGINS,
     INDEX_PATH,
+    HYBRID_RERANK_ALPHA,
     MAX_QUESTION_LENGTH,
     PRELOAD_RETRIEVER_ON_STARTUP,
     RATE_LIMIT_BACKEND,
@@ -51,11 +52,12 @@ from src.config.settings import (
     RERANK_RETRIEVE_K,
     SCORE_THRESHOLD,
     TOP_K,
+    USE_HYBRID_RERANK,
     USE_RERANKER,
 )
 from src.generation import answer, answer_stream
 from src.retrieval import Retriever, embed_query, embed_texts
-from src.retrieval.reranker import rerank
+from src.retrieval.reranker import hybrid_rerank, rerank
 from src.retrieval.vector_store import VectorStore
 
 # In-memory rate limit: ip -> list of request timestamps (for /ask and /ask/stream)
@@ -456,6 +458,8 @@ def ask(req: AskRequest, request: Request):
     chunks = retriever.retrieve(q, top_k=retrieve_k)
     if USE_RERANKER and len(chunks) > TOP_K:
         chunks = rerank(q, chunks, top_k=TOP_K)
+    elif USE_HYBRID_RERANK:
+        chunks = hybrid_rerank(q, chunks, top_k=TOP_K, alpha=HYBRID_RERANK_ALPHA)
     if req.source_filter is not None:
         chunks = [c for c in chunks if c.get("source") == req.source_filter]
 
@@ -534,6 +538,8 @@ def ask_stream(req: AskRequest, request: Request):
         chunks = retriever.retrieve(q, top_k=retrieve_k)
         if USE_RERANKER and len(chunks) > TOP_K:
             chunks = rerank(q, chunks, top_k=TOP_K)
+        elif USE_HYBRID_RERANK:
+            chunks = hybrid_rerank(q, chunks, top_k=TOP_K, alpha=HYBRID_RERANK_ALPHA)
         if req.source_filter is not None:
             chunks = [c for c in chunks if c.get("source") == req.source_filter]
         snippet_len = 200
@@ -597,7 +603,12 @@ def retrieve(req: RetrieveRequest):
         raise HTTPException(status_code=503, detail={"code": "retriever_unavailable", "message": str(e)})
 
     q = (req.question or "").strip() or "What is in the handbook?"
-    raw = retriever.retrieve(q, top_k=req.top_k)
+    retrieve_k = max(req.top_k, RERANK_RETRIEVE_K) if USE_RERANKER else req.top_k
+    raw = retriever.retrieve(q, top_k=retrieve_k)
+    if USE_RERANKER and len(raw) > req.top_k:
+        raw = rerank(q, raw, top_k=req.top_k)
+    elif USE_HYBRID_RERANK:
+        raw = hybrid_rerank(q, raw, top_k=req.top_k, alpha=HYBRID_RERANK_ALPHA)
     if req.source_filter is not None:
         raw = [c for c in raw if c.get("source") == req.source_filter]
     chunks = [ChunkOut(text=c.get("text", ""), page=c.get("page"), score=c.get("score", 0.0)) for c in raw]

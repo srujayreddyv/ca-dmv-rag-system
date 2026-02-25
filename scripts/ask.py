@@ -21,9 +21,17 @@ sys.path.insert(0, str(ROOT))
 
 from openai import AuthenticationError, NotFoundError, RateLimitError
 
-from src.config.settings import INDEX_PATH, TOP_K
+from src.config.settings import (
+    HYBRID_RERANK_ALPHA,
+    INDEX_PATH,
+    RERANK_RETRIEVE_K,
+    TOP_K,
+    USE_HYBRID_RERANK,
+    USE_RERANKER,
+)
 from src.generation import answer
 from src.retrieval import Retriever
+from src.retrieval.reranker import hybrid_rerank, rerank
 
 
 def main() -> None:
@@ -38,7 +46,12 @@ def main() -> None:
     )
 
     retriever = Retriever(INDEX_PATH)
-    chunks = retriever.retrieve(question, top_k=TOP_K)
+    retrieve_k = RERANK_RETRIEVE_K if USE_RERANKER else TOP_K
+    chunks = retriever.retrieve(question, top_k=retrieve_k)
+    if USE_RERANKER and len(chunks) > TOP_K:
+        chunks = rerank(question, chunks, top_k=TOP_K)
+    elif USE_HYBRID_RERANK:
+        chunks = hybrid_rerank(question, chunks, top_k=TOP_K, alpha=HYBRID_RERANK_ALPHA)
 
     print(f"Question: {question}\n")
     print("Answer:")

@@ -115,6 +115,7 @@ ca-dmv-rag-system/
 ├── render.yaml                   # Render Blueprint (see docs/DEPLOY.md)
 ├── .env.example
 └── docs/
+    ├── ARCHITECTURE.md          # system architecture diagrams (Mermaid)
     ├── SETUP_AND_PROCESS.md      # setup, RAG stages, run order
     ├── DEPLOY.md                 # deploy API (Render, etc.)
     └── ROADMAP.md                # done / next
@@ -155,6 +156,7 @@ pytest tests/ -m "not slow"   # skip slow tests (embedding model)
 ## Documentation
 
 - [SETUP_AND_PROCESS.md](docs/SETUP_AND_PROCESS.md) — setup, RAG stages, run order
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — end-to-end system architecture and request flow
 - [DEPLOY.md](docs/DEPLOY.md) — deploy API to Render (or other hosts)
 - [ROADMAP.md](docs/ROADMAP.md) — what’s done and what to add next
 - **GET /docs** (Swagger) when the API is running

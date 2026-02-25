@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from src.retrieval.vector_store import VectorStore
+from src.retrieval.reranker import hybrid_rerank
 
 
 def _normalize(x: np.ndarray) -> np.ndarray:
@@ -77,6 +78,19 @@ class TestVectorStore:
         assert len(out) == 4
         texts = [o["text"] for o in out]
         assert "a" in texts and "b" in texts and "c" in texts and "d" in texts
+
+
+class TestHybridRerank:
+    def test_lexical_overlap_boosts_relevance(self):
+        query = "blood alcohol limit dui"
+        chunks = [
+            {"text": "General parking information and permits.", "score": 0.95},
+            {"text": "The blood alcohol concentration limit for DUI is 0.08%.", "score": 0.70},
+        ]
+        out = hybrid_rerank(query, chunks, top_k=2, alpha=0.6)
+        assert len(out) == 2
+        assert "blood alcohol" in out[0]["text"].lower()
+        assert out[0]["hybrid_score"] >= out[1]["hybrid_score"]
 
 
 @pytest.mark.slow
