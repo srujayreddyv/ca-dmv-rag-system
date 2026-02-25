@@ -72,6 +72,8 @@ def bleu(pred: str, ref: str) -> float:
     """
     BLEU-4 score (0–1) between prediction and reference. Uses nltk.
     """
+    if _normalize(pred) == _normalize(ref):
+        return 1.0
     if not ref:
         # Keep empty-reference behavior aligned with tests and tolerant eval semantics.
         return 1.0
@@ -83,8 +85,17 @@ def bleu(pred: str, ref: str) -> float:
         pred_tok = nltk.word_tokenize((pred or "").lower())
         if not ref_tok:
             return 1.0
+        n = min(4, len(ref_tok))
+        if n == 1:
+            weights = (1.0, 0.0, 0.0, 0.0)
+        elif n == 2:
+            weights = (0.5, 0.5, 0.0, 0.0)
+        elif n == 3:
+            weights = (1 / 3, 1 / 3, 1 / 3, 0.0)
+        else:
+            weights = (0.25, 0.25, 0.25, 0.25)
         smooth = SmoothingFunction().method1
-        return float(sentence_bleu([ref_tok], pred_tok, smoothing_function=smooth))
+        return float(sentence_bleu([ref_tok], pred_tok, weights=weights, smoothing_function=smooth))
     except Exception:
         # Fallback: unigram BLEU-like score with brevity penalty.
         ref_tok = _simple_tokenize(ref)
